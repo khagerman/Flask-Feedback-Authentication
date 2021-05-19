@@ -20,11 +20,14 @@ toolbar = DebugToolbarExtension(app)
 
 @app.route("/")
 def home_page():
+    """return restistration form or if loggerd in, user profile"""
     return redirect("/register")
 
 
 @app.route("/register", methods=["GET", "POST"])
 def register_user():
+    if "user_id" in session:
+        return redirect(f"/users/{session['user_id']}")
     form = UserForm()
     if form.validate_on_submit():
         username = form.username.data
@@ -83,23 +86,25 @@ def logout_user():
 
 @app.route("/user/<int:id>")
 def show_user(id):
-    if "user_id" not in session or id != session["user_id"]:
+    user = User.query.get_or_404(id)
+    if "user_id" not in session or user != session["user_id"]:
         flash("Please login first!", "danger")
         return redirect("/login")
     else:
-        user = User.query.get(id)
+
         return render_template("user.html", user=user)
 
 
 @app.route("/user/<int:id>/delete", methods=["POST"])
 def delete_user(id):
     """Delete post"""
+    id = User.query.get_or_404(id)
     if "user_id" not in session:
         flash("Please login first!", "danger")
         return redirect("/login")
-    user_id = User.query.get_or_404(id)
-    if user_id == session["user_id"]:
-        db.session.delete(user_id)
+
+    if id == session["user_id"]:
+        db.session.delete(id)
         db.session.commit()
         flash("Account deleted!", "info")
         return redirect("/register")
@@ -107,148 +112,82 @@ def delete_user(id):
     return redirect("/")
 
 
-@app.route("/user/<int:id>/feedback/add")
-def add_feedback_form(id):
-    """Render form to add new feedback (post)"""
-    form = PostForm()
-    if "user_id" not in session:
-        flash("Please login first!", "danger")
-        return redirect("/login")
-    user_id = User.query.get_or_404(id)
-    if user_id == session["user_id"]:
-
-        return render_template("post.html", form=form)
-    flash("You don't have permission to do that!", "danger")
-    return redirect("/")
-
-
-@app.route("/user/<int:id>/feedback/add", methods=["POST"])
+@app.route("/user/<int:id>/feedback/add", methods=["GET", "POST"])
 def add_feedback(id):
-    """Edit feedback (post)"""
+    """Render form to add new feedback (post)"""
+    id = User.query.get_or_404(id)
     form = PostForm()
     if "user_id" not in session:
         flash("Please login first!", "danger")
         return redirect("/login")
-    user_id = User.query.get_or_404(id)
-    if user_id == session["user_id"]:
-        if form.validate_on_submit():
-            title = form.title.data
-            content = form.content.data
+    if id != session["user_id"]:
+        flash("You don't have permission to do that!", "danger")
+        return redirect("/")
+    if form.validate_on_submit():
+        title = form.title.data
+        content = form.content.data
 
-            feedback = Feedback(
-                title=title, content=content, user_id=session["user_id"]
-            )
+        feedback = Feedback(title=title, content=content, user_id=session["user_id"])
 
-            db.session.add(feedback)
-            db.session.commit()
-            return redirect(f"/user/{user_id}")
-    flash("You don't have permission to do that!", "danger")
-    return redirect("/")
+        db.session.add(feedback)
+        db.session.commit()
+        return redirect(f"/user/{id}")
+    else:
+        return render_template("post.html", form=form, user_id=id)
 
 
-@app.route("/feedback/<int:id>/update")
-def update_feedback(id):
-    """Edit feedback (post)"""
+@app.route("/feedback/<int:id>/update", methods=["GET", "POST"])
+def update_feedback_form(id):
+    """Show edit feedback form and submit"""
+    feedback = Feedback.query.get_or_404(id)
+    form = PostForm()
     if "user_id" not in session:
         flash("Please login first!", "danger")
         return redirect("/login")
-    user_id = User.query.get_or_404(id)
-    if user_id == session["user_id"]:
+    if feedback.user.user_id != session["user_id"]:
 
-        return render_template("edit.html")
-    flash("You don't have permission to do that!", "danger")
-    return redirect("/")
-
-
-@app.route("/feedback/<int:id>/update", methods=["POST"])
-def update_feedback(id):
-    """Edit feedback (post)"""
-    if "user_id" not in session:
-        flash("Please login first!", "danger")
-        return redirect("/login")
-    user_id = User.query.get_or_404(id)
-    if user_id == session["user_id"]:
-
-        return render_template("edit.html")
-    flash("You don't have permission to do that!", "danger")
-    return redirect("/")
+        print(feedback.user.user_id)
+        flash("You don't have permission to do that!", "danger")
+        return redirect("/")
+    if form.validate_on_submit():
+        feedback.title = form.title.data
+        feedback.content = form.content.data
+        db.session.commit()
+        return redirect(f"/user/{feedback.user.user_id}")
+    else:
+        return render_template("edit.html", form=form, feedback=feedback)
 
 
-# @app.route("/tweets", methods=["GET", "POST"])
-# def show_tweets():
-#     if "user_id" not in session:
-#         flash("Please login first!", "danger")
-#         return redirect("/")
-#     form = TweetForm()
-#     all_tweets = Tweet.query.all()
-#     if form.validate_on_submit():
-#         text = form.text.data
-#         new_tweet = Tweet(text=text, user_id=session["user_id"])
-#         db.session.add(new_tweet)
-#         db.session.commit()
-#         flash("Tweet Created!", "success")
-#         return redirect("/tweets")
-
-#     return render_template("tweets.html", form=form, tweets=all_tweets)
-
-
-# @app.route("/tweets/<int:id>", methods=["POST"])
-# def delete_tweet(id):
-#     """Delete tweet"""
+# @app.route("/feedback/<int:id>/update", methods=["POST"])
+# def update_feedback(id):
+#     """Edit feedback"""
+#     form = PostForm()
 #     if "user_id" not in session:
 #         flash("Please login first!", "danger")
 #         return redirect("/login")
-#     tweet = Tweet.query.get_or_404(id)
-#     if tweet.user_id == session["user_id"]:
-#         db.session.delete(tweet)
-#         db.session.commit()
-#         flash("Tweet deleted!", "info")
-#         return redirect("/tweets")
-#     flash("You don't have permission to do that!", "danger")
-#     return redirect("/tweets")
+#     feedback = Feedback.query.get_or_404(id)
+#     if feedback.user_id == session["user_id"]:
+#         if form.validate_on_submit():
+#             feedback.title = form.title.data
+#             feedback.content = form.content.data
 
-
-# @app.route("/register", methods=["GET", "POST"])
-# def register_user():
-#     form = UserForm()
-#     if form.validate_on_submit():
-#         username = form.username.data
-#         password = form.password.data
-#         new_user = User.register(username, password)
-
-#         db.session.add(new_user)
-#         try:
 #             db.session.commit()
-#         except IntegrityError:
-#             form.username.errors.append("Username taken.  Please pick another")
-#             return render_template("register.html", form=form)
-#         session["user_id"] = new_user.id
-#         flash("Welcome! Successfully Created Your Account!", "success")
-#         return redirect("/tweets")
-
-#     return render_template("register.html", form=form)
-
-
-# @app.route("/login", methods=["GET", "POST"])
-# def login_user():
-#     form = UserForm()
-#     if form.validate_on_submit():
-#         username = form.username.data
-#         password = form.password.data
-
-#         user = User.authenticate(username, password)
-#         if user:
-#             flash(f"Welcome Back, {user.username}!", "primary")
-#             session["user_id"] = user.id
-#             return redirect("/tweets")
-#         else:
-#             form.username.errors = ["Invalid username/password."]
-
-#     return render_template("login.html", form=form)
-
-
-# @app.route("/logout")
-# def logout_user():
-#     session.pop("user_id")
-#     flash("Goodbye!", "info")
+#         return redirect(f"/user/{feedback.user_id}")
+#     flash("You don't have permission to do that!", "danger")
 #     return redirect("/")
+
+
+@app.route("/feedback/<int:id>/delete", methods=["POST"])
+def delete_feedback(id):
+    """Delete feedback"""
+    if "user_id" not in session:
+        flash("Please login first!", "danger")
+        return redirect("/login")
+    feedback = Feedback.query.get_or_404(id)
+    if feedback.user_id == session["user_id"]:
+        db.session.delete(feedback)
+        db.session.commit()
+        flash("Tweet deleted!", "info")
+        return redirect(f"/user/{feedback.user_id}")
+    flash("You don't have permission to do that!", "danger")
+    return redirect("/login")

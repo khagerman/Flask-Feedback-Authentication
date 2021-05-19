@@ -13,8 +13,11 @@
             <ul class="nav navbar-nav flex-row float-right">
                 {% if session['user_id'] %}
                 <li class="nav-item">
-                    <a class="nav-link pr-3 text-light" href="/logout">Logout</a>
+                    <a class="nav-link pr-3 text-light" href="/user/{{session['user_id']}}">My Profile</a>
+
                 </li>
+
+                <a class="nav-link pr-3 text-light" href="/logout">Logout</a>
                 {% else %}
                 <li class="nav-item">
                     <a class="nav-link pr-3 text-light" href="/login">Login</a>
