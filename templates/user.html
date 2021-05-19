@@ -13,4 +13,11 @@
 {%if session["user.id"] == f.user_id%}
 <h3>{{f.title}}</h3>
 <p>f.content</p>
+<button class="btn btn-danger">Delete</button><button class="btn btn-info">Edit</button>
+{%endif%}
+{%endfor%}
+<button class="btn btn-btn-success" action="/users/{{user.id}}/feedback/add">Create new Feedback</button>
+<form action="/user/{{user.id}}/delete" method="POST">
+    <button class="btn btn-btn-danger">Delete Account</button>
+</form>
 {% endblock %}

@@ -1,5 +1,5 @@
 from flask_wtf import FlaskForm
-from wtforms import StringField, PasswordField
+from wtforms import StringField, PasswordField, TextAreaField
 from wtforms.validators import Email, InputRequired
 
 
@@ -11,8 +11,9 @@ class UserForm(FlaskForm):
     last_name = StringField("Last Name", validators=[InputRequired()])
 
 
-# class TweetForm(FlaskForm):
-#     text = StringField("Tweet Text", validators=[InputRequired()])
+class PostForm(FlaskForm):
+    title = StringField("title", validators=[InputRequired()])
+    content = TextAreaField("title", validators=[InputRequired()])
 
 
 class LoginForm(FlaskForm):

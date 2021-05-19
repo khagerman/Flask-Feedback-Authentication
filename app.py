@@ -1,8 +1,8 @@
 from flask import Flask, render_template, redirect, session, flash
 from flask.templating import render_template_string
 from flask_debugtoolbar import DebugToolbarExtension
-from models import connect_db, db, User
-from forms import UserForm, LoginForm
+from models import connect_db, db, User, Feedback
+from forms import PostForm, UserForm, LoginForm
 from sqlalchemy.exc import IntegrityError
 
 app = Flask(__name__)
@@ -89,6 +89,89 @@ def show_user(id):
     else:
         user = User.query.get(id)
         return render_template("user.html", user=user)
+
+
+@app.route("/user/<int:id>/delete", methods=["POST"])
+def delete_user(id):
+    """Delete post"""
+    if "user_id" not in session:
+        flash("Please login first!", "danger")
+        return redirect("/login")
+    user_id = User.query.get_or_404(id)
+    if user_id == session["user_id"]:
+        db.session.delete(user_id)
+        db.session.commit()
+        flash("Account deleted!", "info")
+        return redirect("/register")
+    flash("You don't have permission to do that!", "danger")
+    return redirect("/")
+
+
+@app.route("/user/<int:id>/feedback/add")
+def add_feedback_form(id):
+    """Render form to add new feedback (post)"""
+    form = PostForm()
+    if "user_id" not in session:
+        flash("Please login first!", "danger")
+        return redirect("/login")
+    user_id = User.query.get_or_404(id)
+    if user_id == session["user_id"]:
+
+        return render_template("post.html", form=form)
+    flash("You don't have permission to do that!", "danger")
+    return redirect("/")
+
+
+@app.route("/user/<int:id>/feedback/add", methods=["POST"])
+def add_feedback(id):
+    """Edit feedback (post)"""
+    form = PostForm()
+    if "user_id" not in session:
+        flash("Please login first!", "danger")
+        return redirect("/login")
+    user_id = User.query.get_or_404(id)
+    if user_id == session["user_id"]:
+        if form.validate_on_submit():
+            title = form.title.data
+            content = form.content.data
+
+            feedback = Feedback(
+                title=title, content=content, user_id=session["user_id"]
+            )
+
+            db.session.add(feedback)
+            db.session.commit()
+            return redirect(f"/user/{user_id}")
+    flash("You don't have permission to do that!", "danger")
+    return redirect("/")
+
+
+@app.route("/feedback/<int:id>/update")
+def update_feedback(id):
+    """Edit feedback (post)"""
+    if "user_id" not in session:
+        flash("Please login first!", "danger")
+        return redirect("/login")
+    user_id = User.query.get_or_404(id)
+    if user_id == session["user_id"]:
+
+        return render_template("edit.html")
+    flash("You don't have permission to do that!", "danger")
+    return redirect("/")
+
+
+@app.route("/feedback/<int:id>/update", methods=["POST"])
+def update_feedback(id):
+    """Edit feedback (post)"""
+    if "user_id" not in session:
+        flash("Please login first!", "danger")
+        return redirect("/login")
+    user_id = User.query.get_or_404(id)
+    if user_id == session["user_id"]:
+
+        return render_template("edit.html")
+    flash("You don't have permission to do that!", "danger")
+    return redirect("/")
 
 
 # @app.route("/tweets", methods=["GET", "POST"])
