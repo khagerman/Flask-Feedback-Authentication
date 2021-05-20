@@ -13,7 +13,7 @@ class UserForm(FlaskForm):
 
 class PostForm(FlaskForm):
     title = StringField("title", validators=[InputRequired()])
-    content = TextAreaField("title", validators=[InputRequired()])
+    content = TextAreaField("content", validators=[InputRequired()])
 
 
 class LoginForm(FlaskForm):

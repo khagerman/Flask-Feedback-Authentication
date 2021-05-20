@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% block content %}
 <form method="POST">
 
     {{ form.hidden_tag() }}
@@ -18,4 +19,4 @@
     <button class="btn btn-success" type="submit">Post</button>
 
 </form>
-{% block content %}
+{% endblock %}

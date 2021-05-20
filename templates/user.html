@@ -9,18 +9,34 @@
     <li><b>Email:</b>{{user.email}} </li>
 
 </ul>
-{%for f in feedback%}
-{%if session["user.id"] == f.user_id%}
-<h3>{{f.title}}</h3>
-<p>f.content</p>
-<form action="/feedback/{{f.id}}/delete" method="post"><button class="btn btn-danger">Delete</button></form><button
-    href="/feedback/{{f.id}}/update" class="btn btn-info">Edit</button>
-{%endif%}
-{%endfor%}
-<form action="/user/{{user.id}}/feedback/add" method="GET">
-    <button class="btn btn-success">Create new Feedback</button>
-</form>
+
 <form action="/user/{{user.id}}/delete" method="POST">
     <button class="btn btn-danger">Delete Account</button>
 </form>
-{% endblock %}
+<h3>Feedback</h3>
+<ul>
+    {% for feedback in user.feedback %}
+
+    <li>
+        {{ feedback.title }}
+        <small>{{ feedback.content }}</small>
+        <div class="row">
+            <div class="col-xs-1 mx-3">
+                <form action="/feedback/{{feedback.id}}/delete" method="post"><button
+                        class="btn btn-danger btn-sm">Delete</button>
+                </form>
+            </div>
+            <div class="col-xs-1">
+                <form action="/feedback/{{feedback.id}}/update" method="get">
+                    <button class="btn btn-info btn-sm">Edit</button>
+                </form>
+            </div>
+        </div>
+    </li>
+    {%endfor%}
+    <form action="/user/{{user.id}}/feedback/add" method="GET">
+        <button class="btn btn-success">Create new Feedback</button>
+    </form>
+
+
+    {% endblock %}

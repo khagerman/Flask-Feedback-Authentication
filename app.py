@@ -27,7 +27,7 @@ def home_page():
 @app.route("/register", methods=["GET", "POST"])
 def register_user():
     if "user_id" in session:
-        return redirect(f"/users/{session['user_id']}")
+        return redirect(f"/user/{session['user_id']}")
     form = UserForm()
     if form.validate_on_submit():
         username = form.username.data
@@ -87,9 +87,12 @@ def logout_user():
 @app.route("/user/<int:id>")
 def show_user(id):
     user = User.query.get_or_404(id)
-    if "user_id" not in session or user != session["user_id"]:
+    if "user_id" not in session:
         flash("Please login first!", "danger")
         return redirect("/login")
+    if user.id != session["user_id"]:
+        flash("You don't have permission to view this profile.", "danger")
+        return redirect("/")
     else:
 
         return render_template("user.html", user=user)
@@ -98,14 +101,15 @@ def show_user(id):
 @app.route("/user/<int:id>/delete", methods=["POST"])
 def delete_user(id):
     """Delete post"""
-    id = User.query.get_or_404(id)
+    user = User.query.get_or_404(id)
     if "user_id" not in session:
         flash("Please login first!", "danger")
         return redirect("/login")
 
-    if id == session["user_id"]:
-        db.session.delete(id)
+    if user.id == session["user_id"]:
+        db.session.delete(user)
         db.session.commit()
+        session.pop("user_id")
         flash("Account deleted!", "info")
         return redirect("/register")
     flash("You don't have permission to do that!", "danger")
@@ -115,12 +119,12 @@ def delete_user(id):
 @app.route("/user/<int:id>/feedback/add", methods=["GET", "POST"])
 def add_feedback(id):
     """Render form to add new feedback (post)"""
-    id = User.query.get_or_404(id)
+    user = User.query.get_or_404(id)
     form = PostForm()
     if "user_id" not in session:
         flash("Please login first!", "danger")
         return redirect("/login")
-    if id != session["user_id"]:
+    if user.id != session["user_id"]:
         flash("You don't have permission to do that!", "danger")
         return redirect("/")
     if form.validate_on_submit():
@@ -131,20 +135,20 @@ def add_feedback(id):
 
         db.session.add(feedback)
         db.session.commit()
-        return redirect(f"/user/{id}")
+        return redirect(f"/user/{user.id}")
     else:
-        return render_template("post.html", form=form, user_id=id)
+        return render_template("post.html", form=form, user_id=user.id)
 
 
 @app.route("/feedback/<int:id>/update", methods=["GET", "POST"])
 def update_feedback_form(id):
     """Show edit feedback form and submit"""
     feedback = Feedback.query.get_or_404(id)
-    form = PostForm()
+    form = PostForm(obj=feedback)
     if "user_id" not in session:
         flash("Please login first!", "danger")
         return redirect("/login")
-    if feedback.user.user_id != session["user_id"]:
+    if feedback.user_id != session["user_id"]:
 
         print(feedback.user.user_id)
         flash("You don't have permission to do that!", "danger")
@@ -153,7 +157,7 @@ def update_feedback_form(id):
         feedback.title = form.title.data
         feedback.content = form.content.data
         db.session.commit()
-        return redirect(f"/user/{feedback.user.user_id}")
+        return redirect(f"/user/{feedback.user_id}")
     else:
         return render_template("edit.html", form=form, feedback=feedback)
 
@@ -180,14 +184,15 @@ def update_feedback_form(id):
 @app.route("/feedback/<int:id>/delete", methods=["POST"])
 def delete_feedback(id):
     """Delete feedback"""
+    feedback = Feedback.query.get_or_404(id)
     if "user_id" not in session:
         flash("Please login first!", "danger")
         return redirect("/login")
-    feedback = Feedback.query.get_or_404(id)
+
     if feedback.user_id == session["user_id"]:
         db.session.delete(feedback)
         db.session.commit()
-        flash("Tweet deleted!", "info")
+        flash("Feedback deleted!", "info")
         return redirect(f"/user/{feedback.user_id}")
     flash("You don't have permission to do that!", "danger")
     return redirect("/login")
